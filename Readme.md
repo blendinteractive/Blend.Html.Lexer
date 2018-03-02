@@ -2,7 +2,7 @@ Blend HTML Lexer
 ================
 
 Blend.Html.Lexer is .NET Netstandard library for lexing HTML.  This library is 
-intended for when you need to manipulation HTML, without needing a full and 
+intended for when you need to manipulate HTML, without needing a full and 
 valid DOM.
 
 For example, to replace all links starting with `http://` with `https://`:
@@ -27,7 +27,7 @@ var output = new StringBuilder(exampleHtml.Length + 10);
 
 foreach(var fragment in fragments)
 {
-	// If the element is an A tag and has an HREF attribute
+    // If the element is an A tag and has an HREF attribute
     if (fragment.IsNamed("a") && fragment.HasAttribute("href"))
     {
         var href = fragment["href"];
