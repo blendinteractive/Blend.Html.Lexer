@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RepositoryUrl>https://github.com/blendinteractive/Blend.Html.Lexer</RepositoryUrl>
+    <PackageTags>lexing, parsing, html</PackageTags>
+    <PackageLicenseUrl>https://github.com/blendinteractive/Blend.Html.Lexer/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/blendinteractive/Blend.Html.Lexer</PackageProjectUrl>
+    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PageOfBob.Parsing.Compiled" Version="1.0.0-alpha3" />
+  </ItemGroup>
+
+</Project>
