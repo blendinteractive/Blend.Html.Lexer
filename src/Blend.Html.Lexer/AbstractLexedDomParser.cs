@@ -79,8 +79,18 @@ namespace Blend.Html.Lexer
                         if (VoidElements.Contains(fragment.Value.ToLowerInvariant()))
                             break;
 
-                        foreach (var close in CloseUntilMatch(fragment.Value, fragment))
-                            yield return close;
+                        if (stack.Any(x => x.IsNamed(fragment.Value)))
+                        {
+                            foreach (var close in CloseUntilMatch(fragment.Value, fragment))
+                                yield return close;
+                        }
+                        else
+                        {
+                            // If there's nothing to close, this is invalid HTML, push through
+                            // as a child of the current node, but do not pop the stack.
+                            yield return new DomElementEvent(fragment, DomElementEventType.Child);
+                        }
+
                         break;
                     case FragmentType.Open:
                         var nameLower = fragment.Value.ToLowerInvariant();

@@ -74,8 +74,12 @@ namespace Blend.Html.Lexer
             // Or identifer=value
             // Or identifier
             var attribute = Name.Map(x => new HtmlAttribute { Key = x })
+                .ThenIgnoreWhitespace()
                 .Then(
-                    Equal.ThenKeep(Any(QuotedValue, UnquotedValue)).Optional(() => null),
+                    Equal
+                    .ThenIgnoreWhitespace()
+                    .ThenKeep(Any(QuotedValue, UnquotedValue))
+                    .Optional(() => null),
                     (attr, val) => { attr.Value = val; return attr; }
                 );
 
@@ -144,7 +148,11 @@ namespace Blend.Html.Lexer
                 .ThenSetEndPosition();
 
             // Stray open bracket
-            var stray = OpenBracket.Map(x => Fragment.Text("<"));
+            var stray = 
+                StartPosition
+                .ThenCreateFragment(FragmentType.Text)
+                .ThenSetValue(OpenBracket.Map(x => x.ToString()))
+                .ThenSetEndPosition();
 
             // Text and HTML.
             AllFragments = Any(

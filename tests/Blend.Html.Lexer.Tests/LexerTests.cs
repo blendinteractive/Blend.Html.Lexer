@@ -78,6 +78,24 @@ namespace Blend.Html.Lexer.Tests
         }
 
         [Fact]
+        public void CanParseAttributeWithSpaces()
+        {
+            "<p class = \"test\" data-test = ok disabled />".AssertParsesTo(
+                Fragment.OpenTag("p", true, HtmlAttribute.Create("class", "test"), HtmlAttribute.Create("data-test", "ok"), HtmlAttribute.Create("disabled"))
+            );
+        }
+
+        [Fact]
+        public void AttributeSpacesAreWeirdlyOptional()
+        {
+            // This is not valid HTML, but is the kind of thing browsers seem to grudgingly parse
+            // So we grudgingly parse it was well
+            "<p class=\"test\"alt=\"alt-test\" />".AssertParsesTo(
+                Fragment.OpenTag("p", true, HtmlAttribute.Create("class", "test"), HtmlAttribute.Create("alt", "alt-test"))
+            );
+        }
+
+        [Fact]
         public void CanParseCloseTag()
         {
             "<p></p>".AssertParsesTo(

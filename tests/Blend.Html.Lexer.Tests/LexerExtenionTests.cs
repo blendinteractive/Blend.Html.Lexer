@@ -29,5 +29,21 @@ namespace Blend.Html.Lexer.Tests
             string result = html.ReplaceElement(x => x.IsOpen("nav"), "<nav>Replaced!</nav>");
             Assert.Equal("<html><body><header>Head!</header><nav>Replaced!</nav></body></html>", result);
         }
+
+        [Fact]
+        public void InvalidHtmlCanBeReproduced()
+        {
+            const string html = "<a id=\"space here is invalid\" Link</a>";
+            string result = html.ReplaceElement(x => false, "Replaced!");
+            Assert.Equal(html, result);
+        }
+
+        [Fact]
+        public void InvalidHtmlCanBeReproduced2()
+        {
+            const string html = "<a id=\"forgot to close this>Link</a>";
+            string result = html.ReplaceElement(x => false, "Replaced!");
+            Assert.Equal(html, result);
+        }
     }
 }

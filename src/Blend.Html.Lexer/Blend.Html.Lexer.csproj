@@ -6,7 +6,8 @@
     <PackageTags>lexing, parsing, html</PackageTags>
     <PackageLicenseUrl>https://github.com/blendinteractive/Blend.Html.Lexer/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/blendinteractive/Blend.Html.Lexer</PackageProjectUrl>
-    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix lexing of HTML attributes with spaces.</PackageReleaseNotes>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
