@@ -34,5 +34,21 @@ namespace Blend.Html.Lexer.Tests
 
         [Fact]
         public void LastDuplicateAttributeWins() => Assert.Equal("override", TestFragment.GetAttributeValue("class"));
+
+        [Fact]
+        public void IsClosedReturnsCloseTags()
+        {
+            var t = Fragment.CloseTag("a");
+            Assert.True(t.IsClose("a"));
+            Assert.False(t.IsClose("b"));
+            Assert.True(t.IsClose());
+        }
+
+        [Fact]
+        public void IsClosedFalseForSelfClosing()
+        {
+            var t2 = Fragment.OpenTag("a", true);
+            Assert.False(t2.IsClose("a"));
+        }
     }
 }

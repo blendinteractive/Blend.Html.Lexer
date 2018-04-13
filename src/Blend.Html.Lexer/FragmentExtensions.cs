@@ -10,7 +10,7 @@
                 && (name == null || IsNamed(fragment, name));
 
         public static bool IsClose(this Fragment fragment, string name = null)
-            => (fragment.FragmentType == FragmentType.Open)
+            => (fragment.FragmentType == FragmentType.Close)
                 && (name == null || IsNamed(fragment, name));
 
         public static bool AttributeIs(this Fragment fragment, string name, string value)
