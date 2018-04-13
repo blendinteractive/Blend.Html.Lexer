@@ -37,7 +37,6 @@ namespace Blend.Html.Lexer
         public static DomElementEvent Pop(Fragment fragment) => new DomElementEvent(fragment, DomElementEventType.Pop);
     }
 
-
     /// <summary>
     /// Converts a stream of fragments into a DOM, emitting elements
     /// </summary>
@@ -101,13 +100,12 @@ namespace Blend.Html.Lexer
                         }
                         else if (nameLower == "li")
                         {
-
                             // Find the first UL or LI.
                             var parentLiOrUl = stack.FirstOrDefault(x => x.IsNamed("li") || x.IsNamed("ul"));
 
                             // If something is found and it's an LI, then we can close it.
                             // (Note: checking for ULs so we don't close an LI from a grand-parent UL)
-                            if (parentLiOrUl != null && parentLiOrUl.IsNamed("li"))
+                            if (parentLiOrUl?.IsNamed("li") == true)
                             {
                                 foreach (var liClose in CloseUntilMatch("li", parentLiOrUl.AsCloseFragment()))
                                     yield return liClose;

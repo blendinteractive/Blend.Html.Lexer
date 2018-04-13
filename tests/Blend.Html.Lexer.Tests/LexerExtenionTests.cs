@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace Blend.Html.Lexer.Tests
@@ -44,6 +45,23 @@ namespace Blend.Html.Lexer.Tests
             const string html = "<a id=\"forgot to close this>Link</a>";
             string result = html.ReplaceElement(x => false, "Replaced!");
             Assert.Equal(html, result);
+        }
+
+        [Fact]
+        public void CanExtractChunk()
+        {
+            const string html = "<body><div id=\"extract\">Extract Me</div></body>";
+            var extractedContents = HtmlLexer
+                .Read(html)
+                .WithInElement(x => x.IsNamed("div") && x.AttributeIs("id", "extract"))
+                .Where(x => x.WithinElement)
+                .Select(x => x.ElementEvent)
+                .ToList();
+
+            Assert.Equal(3, extractedContents.Count);
+            Assert.True(extractedContents[0].Fragment.IsNamed("div"));
+            Assert.Equal("Extract Me", extractedContents[1].Fragment.Value);
+            Assert.Equal(DomElementEventType.Pop, extractedContents[2].Type);
         }
     }
 }

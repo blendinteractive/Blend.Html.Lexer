@@ -34,7 +34,7 @@ namespace Blend.Html.Lexer
                             yield return new WithinElementDomElementEvent(item, true);
                             if (item.Type == DomElementEventType.Push)
                             {
-                                stack += 1;
+                                stack++;
                             }
                         }
                         else
@@ -56,7 +56,7 @@ namespace Blend.Html.Lexer
                         {
                             yield return new WithinElementDomElementEvent(item, true);
 
-                            stack -= 1;
+                            stack--;
                             if (stack <= 0)
                                 isInsideFragment = false;
                         }
