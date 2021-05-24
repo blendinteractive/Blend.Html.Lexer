@@ -4,6 +4,35 @@ using System.Text;
 
 namespace Blend.Html.Lexer
 {
+    public enum WrapElementsType
+    {
+        /// <summary>
+        /// Adds the wrapping elements outside the matched content
+        /// </summary>
+        AddOuterWrapper = 0,
+        /// <summary>
+        /// Adds the wrapping elements within the matched content
+        /// </summary>
+        AddInnerWrapper,
+        /// <summary>
+        /// Removes the matched elements, and replaces them with the matched content
+        /// </summary>
+        ReplaceMatchedElements
+    }
+
+    public enum NodeType
+    {
+        /// <summary>
+        /// Process the matching node and inner contents
+        /// </summary>
+        OuterNode = 0,
+
+        /// <summary>
+        /// Ignore the matching node and only process the inner contents
+        /// </summary>
+        InnerNode
+    }
+
     public class WithinElementDomElementEvent
     {
         public WithinElementDomElementEvent(DomElementEvent elementEvent, bool withinElement)
@@ -18,7 +47,18 @@ namespace Blend.Html.Lexer
 
     public static class DomParserExtensions
     {
-        public static IEnumerable<WithinElementDomElementEvent> WithInElement(this IEnumerable<Fragment> fragments, Func<Fragment, bool> matchElement)
+        /// <summary>
+        /// Emits a stream of events
+        /// </summary>
+        /// <param name="fragments">The lexed HTML fragments</param>
+        /// <param name="matchElement">A function to match which element should be considered the "outside" element to process</param>
+        /// <param name="includeClosingElementWithin">
+        /// If true, IsWithin will be true of the final closing element. This can be handy 
+        /// for handling different scenarios. For extracting with the outer value, you probably want this to be true.
+        /// For extrating just the inner value, you would want this to be false.
+        /// </param>
+        /// <returns></returns>
+        public static IEnumerable<WithinElementDomElementEvent> WithInElement(this IEnumerable<Fragment> fragments, Func<Fragment, bool> matchElement, bool includeClosingElementWithin)
         {
             bool isInsideFragment = false;
             int stack = 0;
@@ -54,11 +94,11 @@ namespace Blend.Html.Lexer
                     case DomElementEventType.Pop:
                         if (isInsideFragment)
                         {
-                            yield return new WithinElementDomElementEvent(item, true);
-
                             stack--;
                             if (stack <= 0)
                                 isInsideFragment = false;
+
+                            yield return new WithinElementDomElementEvent(item, includeClosingElementWithin ? true : isInsideFragment);
                         }
                         else
                         {
@@ -69,29 +109,192 @@ namespace Blend.Html.Lexer
             }
         }
 
-        public static string ReplaceElement(this string html, Func<Fragment, bool> matchElement, string replacementText)
+        public static void ProcessElements(this IEnumerable<WithinElementDomElementEvent> events,
+            Action<WithinElementDomElementEvent> outside,
+            Action<WithinElementDomElementEvent> onEnter,
+            Action<WithinElementDomElementEvent> inside,
+            Action<WithinElementDomElementEvent> onExit)
         {
-            StringBuilder sb = new StringBuilder();
-            bool replaced = false;
+            // Makeshift state machine
+            // null = Not yet known if within or without.
+            bool? currentlyWithin = null;
 
-            var events = HtmlLexer.Read(html).WithInElement(matchElement);
-
-            foreach(var ev in events)
+            foreach (var ev in events)
             {
-                if (ev.WithinElement)
+                if (!currentlyWithin.HasValue)
                 {
-                    if (!replaced)
-                        sb.Append(replacementText);
-                    replaced = true;
+                    if (ev.WithinElement)
+                    {
+                        onEnter?.Invoke(ev);
+                        currentlyWithin = true;
+                    }
+                    else
+                    {
+                        outside?.Invoke(ev);
+                        currentlyWithin = false;
+                    }
                 }
                 else
                 {
-                    if (ev.ElementEvent.Fragment != null)
+                    if (currentlyWithin.Value)
                     {
-                        sb.Append(html, ev.ElementEvent.Fragment.Trivia.StartPosition, ev.ElementEvent.Fragment.Trivia.Length);
+                        if (!ev.WithinElement)
+                        {
+                            onExit?.Invoke(ev);
+                            currentlyWithin = false;
+                        }
+                        else
+                        {
+                            inside?.Invoke(ev);
+                        }
+                    }
+                    else
+                    {
+                        if (ev.WithinElement)
+                        {
+                            onEnter?.Invoke(ev);
+                            currentlyWithin = true;
+                        }
+                        else
+                        {
+                            outside?.Invoke(ev);
+                        }
                     }
                 }
             }
+        }
+
+        public static string ExtractElements(this string html, Func<Fragment, bool> matchElement, NodeType nodeType)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            Action<WithinElementDomElementEvent> appendElement = (ev) =>
+            {
+                if (ev.ElementEvent.Fragment != null)
+                {
+                    sb.Append(html, ev.ElementEvent.Fragment.Trivia.StartPosition, ev.ElementEvent.Fragment.Trivia.Length);
+                }
+            };
+
+            Action<WithinElementDomElementEvent> doNothing = (ev) => { };
+
+            var events = HtmlLexer.Read(html).WithInElement(matchElement, false);
+
+            events.ProcessElements(
+                outside: doNothing,
+                onEnter: nodeType == NodeType.OuterNode ? appendElement : doNothing,
+                inside: appendElement,
+                onExit: nodeType == NodeType.OuterNode ? appendElement : doNothing
+            );
+
+            return sb.ToString();
+        }
+
+        public static string ReplaceElements(this string html, Func<Fragment, bool> matchElement, string replacementString, NodeType replaceType)
+            => ReplaceElements(html, matchElement, () => replacementString, replaceType);
+
+        public static string ReplaceElements(this string html, Func<Fragment, bool> matchElement, Func<string> replace, NodeType replaceType)
+        {
+            StringBuilder sb = new StringBuilder(html.Length);
+
+            void AppendElement(WithinElementDomElementEvent ev)
+            {
+                if (ev.ElementEvent.Fragment != null)
+                {
+                    sb.Append(html, ev.ElementEvent.Fragment.Trivia.StartPosition, ev.ElementEvent.Fragment.Trivia.Length);
+                }
+            }
+
+            var events = HtmlLexer.Read(html).WithInElement(matchElement, false);
+
+            bool replaced = false;
+
+            events.ProcessElements(
+                outside: AppendElement,
+                onEnter: (ev) =>
+                {
+                    switch (replaceType)
+                    {
+                        case NodeType.InnerNode:
+                            AppendElement(ev);
+                            break;
+                    }
+                },
+                inside: (_) =>
+                {
+                    if (!replaced)
+                    {
+                        sb.Append(replace?.Invoke());
+                        replaced = true;
+                    }
+                },
+                onExit: (ev) =>
+                {
+                    switch (replaceType)
+                    {
+                        case NodeType.InnerNode:
+                            AppendElement(ev);
+                            break;
+                    }
+                });
+
+            return sb.ToString();
+        }
+
+        public static string WrapElements(this string html, Func<Fragment, bool> matchElement, string before, string after, WrapElementsType wrapType)
+            => WrapElements(html, matchElement, () => before, () => after, wrapType);
+
+        public static string WrapElements(this string html, Func<Fragment, bool> matchElement, Func<string> before, Func<string> after, WrapElementsType wrapType)
+        {
+            StringBuilder sb = new StringBuilder(html.Length);
+
+            void AppendElement(WithinElementDomElementEvent ev)
+            {
+                if (ev.ElementEvent.Fragment != null)
+                {
+                    sb.Append(html, ev.ElementEvent.Fragment.Trivia.StartPosition, ev.ElementEvent.Fragment.Trivia.Length);
+                }
+            }
+
+            var events = HtmlLexer.Read(html).WithInElement(matchElement, false);
+
+            events.ProcessElements( 
+                outside: AppendElement,
+                onEnter: (ev) =>
+                {
+                    switch (wrapType)
+                    {
+                        case WrapElementsType.ReplaceMatchedElements:
+                            sb.Append(before?.Invoke());
+                            break;
+                        case WrapElementsType.AddOuterWrapper:
+                            sb.Append(before?.Invoke());
+                            AppendElement(ev);
+                            break;
+                        case WrapElementsType.AddInnerWrapper:
+                            AppendElement(ev);
+                            sb.Append(before?.Invoke());
+                            break;
+                    }
+                },
+                inside: AppendElement,
+                onExit: (ev) =>
+                {
+                    switch (wrapType)
+                    {
+                        case WrapElementsType.ReplaceMatchedElements:
+                            sb.Append(after?.Invoke());
+                            break;
+                        case WrapElementsType.AddOuterWrapper:
+                            AppendElement(ev);
+                            sb.Append(after?.Invoke());
+                            break;
+                        case WrapElementsType.AddInnerWrapper:
+                            sb.Append(after?.Invoke());
+                            AppendElement(ev);
+                            break;
+                    }
+                });
 
             return sb.ToString();
         }

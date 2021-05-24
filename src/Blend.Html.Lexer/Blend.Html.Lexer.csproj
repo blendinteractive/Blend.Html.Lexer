@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,8 +6,8 @@
     <PackageTags>lexing, parsing, html</PackageTags>
     <PackageLicenseUrl>https://github.com/blendinteractive/Blend.Html.Lexer/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/blendinteractive/Blend.Html.Lexer</PackageProjectUrl>
-    <PackageReleaseNotes>Fixed bug w/ `IsClose` extension method.</PackageReleaseNotes>
-    <Version>1.0.2</Version>
+    <PackageReleaseNotes>Added several more extension methods (with more consistent names).</PackageReleaseNotes>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>
