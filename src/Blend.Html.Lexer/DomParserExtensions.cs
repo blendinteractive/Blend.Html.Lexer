@@ -164,17 +164,27 @@ namespace Blend.Html.Lexer
             }
         }
 
-        public static string ExtractElements(this string html, Func<Fragment, bool> matchElement, NodeType nodeType)
+        public static IEnumerable<string> ExtractElementsList(this string html, Func<Fragment, bool> matchElement, NodeType nodeType, bool textOnly = false)
         {
             StringBuilder sb = new StringBuilder();
+            List<string> output = new List<string>();
 
-            Action<WithinElementDomElementEvent> appendElement = (ev) =>
+            void appendElement (WithinElementDomElementEvent ev)
             {
-                if (ev.ElementEvent.Fragment != null)
-                {
-                    sb.Append(html, ev.ElementEvent.Fragment.Trivia.StartPosition, ev.ElementEvent.Fragment.Trivia.Length);
-                }
+                if (ev.ElementEvent.Fragment == null)
+                    return;
+
+                if (textOnly && ev.ElementEvent.Fragment.FragmentType != FragmentType.Text)
+                    return;
+
+                sb.Append(html, ev.ElementEvent.Fragment.Trivia.StartPosition, ev.ElementEvent.Fragment.Trivia.Length);
             };
+
+            void AddToList()
+            {
+                output.Add(sb.ToString());
+                sb.Clear();
+            }
 
             Action<WithinElementDomElementEvent> doNothing = (ev) => { };
 
@@ -182,12 +192,39 @@ namespace Blend.Html.Lexer
 
             events.ProcessElements(
                 outside: doNothing,
-                onEnter: nodeType == NodeType.OuterNode ? appendElement : doNothing,
+                onEnter: (ev) =>
+                {
+                    if (nodeType == NodeType.OuterNode)
+                        appendElement(ev);
+                },
                 inside: appendElement,
-                onExit: nodeType == NodeType.OuterNode ? appendElement : doNothing
+                onExit: (ev) =>
+                {
+                    if (nodeType == NodeType.OuterNode)
+                        appendElement(ev);
+                    AddToList();
+                }
             );
 
-            return sb.ToString();
+            return output;
+        }
+
+        public static string ExtractElements(this string html, Func<Fragment, bool> matchElement, NodeType nodeType)
+        {
+            var list = ExtractElementsList(html, matchElement, nodeType);
+            return string.Join("", list);
+        }
+
+        public static IEnumerable<string> ExtractTextList(this string html, Func<Fragment, bool> matchElement)
+        {
+            return ExtractElementsList(html, matchElement, NodeType.InnerNode, true);
+        }
+
+
+        public static string ExtractText(this string html, Func<Fragment, bool> matchElement)
+        {
+            var list = ExtractElementsList(html, matchElement, NodeType.InnerNode, true);
+            return string.Join("", list);
         }
 
         public static string ReplaceElements(this string html, Func<Fragment, bool> matchElement, string replacementString, NodeType replaceType)

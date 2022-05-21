@@ -1,4 +1,8 @@
-﻿namespace Blend.Html.Lexer
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Blend.Html.Lexer
 {
     public static class FragmentExtensions
     {

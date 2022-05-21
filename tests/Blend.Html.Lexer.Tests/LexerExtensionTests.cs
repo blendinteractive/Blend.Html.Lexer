@@ -81,6 +81,44 @@ namespace Blend.Html.Lexer.Tests
         }
 
         [Fact]
+        public void CanExtractChunkListWithExtensionMethod()
+        {
+            const string html = "<body><section>One</section><section>Two</section></body>";
+            var actual = html.ExtractElementsList(x => x.IsNamed("section"), NodeType.InnerNode).ToList();
+            Assert.Equal(2, actual.Count);
+            Assert.Equal("One", actual[0]);
+            Assert.Equal("Two", actual[1]);
+        }
+
+        [Fact]
+        public void CanExtractChunkListWithExtensionMethodOuterNode()
+        {
+            const string html = "<body><section>One</section><section>Two</section></body>";
+            var actual = html.ExtractElementsList(x => x.IsNamed("section"), NodeType.OuterNode).ToList();
+            Assert.Equal(2, actual.Count);
+            Assert.Equal("<section>One</section>", actual[0]);
+            Assert.Equal("<section>Two</section>", actual[1]);
+        }
+
+        [Fact]
+        public void CanExtractTextWithExtensionMethod()
+        {
+            const string html = "<body><div id=\"extract\"><span>Extract</span> <em>Me</em></div></body>";
+            var actual = html.ExtractText(x => x.IsNamed("div") && x.AttributeIs("id", "extract"));
+            Assert.Equal("Extract Me", actual);
+        }
+
+        [Fact]
+        public void CanExtractTextListWithExtensionMethod()
+        {
+            const string html = "<body><p>First</p><p><bold>Second</bold> example</p></body>";
+            var actual = html.ExtractTextList(x => x.IsNamed("p")).ToList();
+            Assert.Equal(2, actual.Count);
+            Assert.Equal("First", actual[0]);
+            Assert.Equal("Second example", actual[1]);
+        }
+
+        [Fact]
         public void CanExtracInnerChunkWithExtensionMethod()
         {
             const string html = "<body><div id=\"extract\">Extract Me</div></body>";

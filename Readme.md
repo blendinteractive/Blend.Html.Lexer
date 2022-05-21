@@ -135,6 +135,22 @@ matching the parent node.
     Assert.Equal(DomElementEventType.Pop, extractedContents[2].Type);
 ```
 
+**`ExtractText`** - This helper extracts text only, leaving out any nodes. It's similar to
+`InnerText` in many DOM APIs.
+
+
+```csharp
+    // Include outer node
+    const string html = "<body><div id=\"extract\">Extract Me</div></body>";
+    var actual = html.ExtractElements(x => x.IsNamed("div") && x.AttributeIs("id", "extract"), NodeType.OuterNode);
+    Assert.Equal("<div id=\"extract\">Extract Me</div>", actual);
+
+    // Inner nodes only
+    const string html = "<body><div id=\"extract\">Extract Me</div></body>";
+    var actual = html.ExtractElements(x => x.IsNamed("div") && x.AttributeIs("id", "extract"), NodeType.InnerNode);
+    Assert.Equal("Extract Me", actual);
+```
+
 **`ExtractElements`** - This helper can be used to extract a chunk of HTML, either 
 the matching node and contents (`NodeType.OuterNode`), or just the inner 
 contents (`NodeType.InnerNode`).
@@ -150,6 +166,28 @@ contents (`NodeType.InnerNode`).
     const string html = "<body><div id=\"extract\">Extract Me</div></body>";
     var actual = html.ExtractElements(x => x.IsNamed("div") && x.AttributeIs("id", "extract"), NodeType.InnerNode);
     Assert.Equal("Extract Me", actual);
+```
+
+**`ExtractElementsList`** - This helper can be used to extract several chunks of HTML, either 
+the matching node and contents (`NodeType.OuterNode`), or just the inner 
+contents (`NodeType.InnerNode`). Performs much the same function as ``, except this will 
+return a list of all elements that matched separately, rather than all the sections together 
+in one string.
+
+```csharp
+    // Include outer node
+    const string html = "<body><section>One</section><section>Two</section></body>";
+    var actual = html.ExtractElementsList(x => x.IsNamed("section"), NodeType.OuterNode).ToList();
+    Assert.Equal(2, actual.Count);
+    Assert.Equal("<section>One</section>", actual[0]);
+    Assert.Equal("<section>Two</section>", actual[1]);
+
+    // Inner nodes only
+    const string html = "<body><section>One</section><section>Two</section></body>";
+    var actual = html.ExtractElementsList(x => x.IsNamed("section"), NodeType.InnerNode).ToList();
+    Assert.Equal(2, actual.Count);
+    Assert.Equal("One", actual[0]);
+    Assert.Equal("Two", actual[1]);
 ```
 
 **`ReplaceElements`** - This helper is meant to replace an HTML element (and 
